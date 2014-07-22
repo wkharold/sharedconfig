@@ -11,18 +11,20 @@ import (
 
 // SharedConfig represents a shared (global) configuration backed by a file.
 type SharedConfig struct {
-	h    schandler
-	done chan struct{}
-	kch  chan string
-	vch  chan string
+	scchans
+	h schandler
 }
 
 type schandler struct {
+	scchans
 	scmap map[string]string
 	fnm   string
-	done  chan struct{}
-	kch   chan string
-	vch   chan string
+}
+
+type scchans struct {
+	done chan struct{}
+	kch  chan string
+	vch  chan string
 }
 
 // New creates a new shared configuration backed by the specified file.
@@ -31,12 +33,12 @@ func New(fnm string) (*SharedConfig, error) {
 	kch := make(chan string)
 	vch := make(chan string)
 
-	h := schandler{make(map[string]string), fnm, done, kch, vch}
+	h := schandler{scchans{done, kch, vch}, make(map[string]string), fnm}
 	if err := h.run(); err != nil {
 		return nil, err
 	}
 
-	return &SharedConfig{h, done, kch, vch}, nil
+	return &SharedConfig{scchans{done, kch, vch}, h}, nil
 }
 
 // Close releases all the resources associated with this shared configuration.
